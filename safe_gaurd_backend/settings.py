@@ -25,11 +25,11 @@ SECRET_KEY = 'django-insecure-=+!q7p&&33lka6c2f19!t3zk)zo_xswhpic-yyhk^+!5k*5^^&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-HOST = 'vercel'
+HOST = 'safe-gaurd-backend.vercel.app'
 
 ALLOWED_HOSTS = ['.vercel.app']
 
-SWAGGER_UR = f'http://{HOST}'
+SWAGGER_UR = f'https://{HOST}'
 
 # Application definition
 
