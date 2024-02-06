@@ -11,7 +11,7 @@ class Camera(models.Model):
 
     rtsp_status = models.BooleanField(default=False)
     rtsp_message = models.CharField(max_length=255, blank=True, null=True)
-    rtsp_frame = models.ImageField(upload_to='images/health/', default='default.png')
+    rtsp_frame = models.ImageField(upload_to='status/', default='default.jpeg', null=True, blank=True)
 
     helmet = models.BooleanField(default=False)
     vest = models.BooleanField(default=False)

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-=+!q7p&&33lka6c2f19!t3zk)zo_xswhpic-yyhk^+!5k*5^^&'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 HOST = 'safe-gaurd-backend.vercel.app'
 
@@ -33,7 +34,7 @@ else:
     ALLOWED_HOSTS = ['.vercel.app']
 
 if DEBUG == True:
-    SWAGGER_URL = '127.0.0.1:8000/'
+    SWAGGER_URL = 'http://127.0.0.1:8000/'
 else:
     SWAGGER_URL = f'https://{HOST}'
 
@@ -155,6 +156,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES':[
         'rest_framework.permissions.IsAuthenticated'
     ],
+    'SIMPLE_JWT': {
+        'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    },
 }
 
 SWAGGER_SETTINGS = {
@@ -170,3 +174,6 @@ SWAGGER_SETTINGS = {
     'USE_COOKIES': True,
     'PERSIST_AUTH': True,
 }
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_URL = "/media/"
