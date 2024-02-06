@@ -9,7 +9,7 @@ class Camera(models.Model):
     description = models.TextField(blank=True, null=True)
     source = models.TextField(blank=True, null=True)
 
-    rtsp_status = models.CharField(max_length=10, blank=True, null=True)
+    rtsp_status = models.BooleanField(default=False)
     rtsp_message = models.CharField(max_length=255, blank=True, null=True)
     rtsp_frame = models.ImageField(upload_to='images/health/', default='default.png')
 

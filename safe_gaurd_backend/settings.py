@@ -27,9 +27,15 @@ DEBUG = False
 
 HOST = 'safe-gaurd-backend.vercel.app'
 
-ALLOWED_HOSTS = ['.vercel.app']
+if DEBUG == True:
+    ALLOWED_HOSTS = []
+else:
+    ALLOWED_HOSTS = ['.vercel.app']
 
-SWAGGER_URL = f'https://{HOST}'
+if DEBUG == True:
+    SWAGGER_URL = '127.0.0.1:8000/'
+else:
+    SWAGGER_URL = f'https://{HOST}'
 
 # Application definition
 
