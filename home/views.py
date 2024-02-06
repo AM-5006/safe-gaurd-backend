@@ -14,8 +14,6 @@ from rest_framework.permissions import AllowAny
 from .models import * 
 from .serializers import *
 
-# from .utils import *
-
 import uuid
 # Create your views here.
 
@@ -69,8 +67,12 @@ class CameraView(generics.GenericAPIView):
     queryset = Camera.objects.all()
 
     def post(self, request):
-        # cam_status, msg, frame = cameraCheck(request.data['source'])
-        cam_status, msg, frame = False, "", None
+        try:
+            import cv2
+            from .utils import cameraCheck
+            cam_status, msg, frame = cameraCheck(request.data['source'])
+        except Exception as e:
+            cam_status, msg, frame = False, "", None
 
         data = {
             'name': request.data.get('name', ''),
@@ -79,18 +81,17 @@ class CameraView(generics.GenericAPIView):
             'source': request.data.get('source', ''),
             'rtsp_status': request.data.get('rtsp_status', cam_status),
             'rtsp_message': request.data.get('rtsp_message', msg),
-            'rtsp_frame': request.data.get('rtsp_frame', None),
             'helmet': request.data.get('helmet', False),
             'vest': request.data.get('vest', False),
             'polygons': request.data.get('polygons', ''),
             'email_alert': request.data.get('email_alert', ''),
         }
 
-        # if frame is not None:
-        #     _, buffer = cv2.imencode('.jpg', frame)
-        #     filename = str(uuid.uuid4()) + '.jpg'
-        #     content_file = ContentFile(buffer.tobytes(), name=filename)
-        #     data['rtsp_frame'] = content_file
+        if frame is not None:
+            _, buffer = cv2.imencode('.jpg', frame)
+            filename = str(uuid.uuid4()) + '.jpg'
+            content_file = ContentFile(buffer.tobytes(), name=filename)
+            data['rtsp_frame'] = content_file
 
         serializer = self.serializer_class(data=data)
         
