@@ -29,7 +29,7 @@ HOST = 'safe-gaurd-backend.vercel.app'
 
 ALLOWED_HOSTS = ['.vercel.app']
 
-SWAGGER_URL = f'http://{HOST}'
+SWAGGER_URL = f'https://{HOST}'
 
 # Application definition
 
