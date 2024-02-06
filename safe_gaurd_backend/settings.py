@@ -92,7 +92,7 @@ if DEBUG == True:
 else:
     import dj_database_url
     DATABASES = {
-        'default': dj_database_url.parse(env("DATABASE_URL")),
+        'default': dj_database_url.parse('postgres://safe_gaurd_user:IbW0oiQ4YM8PWKOICGvJLq9Nb0fodvOJ@dpg-cn14m78cmk4c73dimvgg-a.oregon-postgres.render.com/safe_gaurd'),
     }
 
 
