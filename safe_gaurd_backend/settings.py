@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=+!q7p&&33lka6c2f19!t3zk)zo_xswhpic-yyhk^+!5k*5^^&'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 HOST = 'safe-gaurd-backend.vercel.app'
 
@@ -107,7 +108,7 @@ if DEBUG == True:
 else:
     import dj_database_url
     DATABASES = {
-        'default': dj_database_url.parse('postgres://safe_gaurd_user:IbW0oiQ4YM8PWKOICGvJLq9Nb0fodvOJ@dpg-cn14m78cmk4c73dimvgg-a.oregon-postgres.render.com/safe_gaurd'),
+        'default': dj_database_url.parse(config('DATABASE_URL')),
     }
 
 
