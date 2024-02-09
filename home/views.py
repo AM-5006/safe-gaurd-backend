@@ -182,3 +182,53 @@ class EmployeeDetailView(generics.GenericAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IncidentView(generics.GenericAPIView):
+    serializer_class = IncidentSerializer
+    permission_classes = [AllowAny]
+    queryset = Incident.objects.all()
+
+    def get(self, request):
+        serializer = self.serializer_class(self.get_queryset(), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({"error":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IncidentDetailView(generics.GenericAPIView):
+    serializer_class = IncidentSerializer
+    permission_classes = [AllowAny]
+    queryset = Incident
+
+    def get(self, request, id):
+        try:
+            incident = self.get_queryset().filter(id=id).first()
+            if incident is None:
+                return Response({"detail": "Incident not found for the given ID"}, status=status.HTTP_404_NOT_FOUND)
+            
+            serializer = self.serializer_class(incident)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, id):
+        try:
+            incident = self.get_queryset().filter(id=id).first()
+            incident.delete()
+            return Response({"detail": "deleted"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"detail": "Incident not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request, id):
+        queryset = self.get_queryset().filter(id=id).first()
+        serializer = self.serializer_class(queryset, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

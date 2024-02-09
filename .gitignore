@@ -1,2 +1,5 @@
 test.mp4
 .env
+db.sqlite3
+home/__pycache__
+safe_gaurd_backend/__pycache__

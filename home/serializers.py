@@ -24,3 +24,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = '__all__'
+
+class IncidentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Incident
+        fields = '__all__'

@@ -11,4 +11,7 @@ urlpatterns = [
     
     path('camera/', CameraView.as_view(), name="camera"),
     path('camera/<str:id>/', CameraDetailView.as_view(), name='camera-detail'),
+
+    path('incident/', IncidentView.as_view(), name="incident"),
+    path('incident/<str:id>/', IncidentDetailView.as_view(), name="incident-detail"),
 ]
