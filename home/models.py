@@ -27,12 +27,13 @@ class Camera(models.Model):
         verbose_name_plural = 'Cameras'
 
 class Employee(models.Model):
+    emp_id = models.CharField(max_length=255, primary_key=True, default=None)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
     phone = models.CharField(max_length=10, blank=True, null=True)
     
     def __str__(self):
-        return f"{self.id}-{self.first_name}"
+        return f"{self.emp_id}-{self.first_name}"
 
     class Meta:
         verbose_name = 'Employee'
@@ -43,7 +44,7 @@ class Incident(models.Model):
     employee = models.ManyToManyField(Employee, blank=True)
     incident = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(null=True, blank=True)
-    incident_image = models.ImageField(upload_to='images/incident/', default='default.png')
+    video_path = models.CharField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return f"{self.camera.id}-{self.timestamp}"

@@ -7,7 +7,7 @@ class CameraAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'location')
 
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'first_name', 'last_name')
+    list_display = ('emp_id', 'first_name', 'last_name')
 
 class IncidentAdmin(admin.ModelAdmin):
     list_display = ('id', 'camera', 'timestamp')
