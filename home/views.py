@@ -168,7 +168,7 @@ class EmployeeDetailView(generics.GenericAPIView):
 
     def get(self, request, id):
         try:
-            employee = self.get_queryset().filter(id=id).first()
+            employee = self.get_queryset().filter(emp_id=id).first()
             if employee is None:
                 return Response({"detail": "Employee not found for the given ID"}, status=status.HTTP_404_NOT_FOUND)
             
@@ -179,14 +179,14 @@ class EmployeeDetailView(generics.GenericAPIView):
 
     def delete(self, request, id):
         try:
-            employee = self.get_queryset().filter(id=id).first()
+            employee = self.get_queryset().filter(emp_id=id).first()
             employee.delete()
             return Response({"detail": "deleted"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"detail": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
     def patch(self, request, id):
-        queryset = self.get_queryset().filter(id=id).first()
+        queryset = self.get_queryset().filter(emp_id=id).first()
         serializer = self.serializer_class(queryset, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
