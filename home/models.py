@@ -41,7 +41,7 @@ class Employee(models.Model):
 
 class Incident(models.Model):
     camera = models.ForeignKey(Camera, on_delete=models.CASCADE)
-    employee = models.ManyToManyField(Employee, blank=True)
+    employee = models.CharField(null=True, blank=True, max_length=255)
     incident = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(null=True, blank=True)
     video_path = models.CharField(max_length=500, blank=True, null=True)
