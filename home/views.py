@@ -144,11 +144,23 @@ class EmployeeView(generics.GenericAPIView):
     queryset = Employee.objects.all()
     pagination_class = PageNumberPagination
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response({"error":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        if isinstance(data, list):
+            responses = []
+            for item in data:
+                serializer = self.serializer_class(data=item)
+                if serializer.is_valid():
+                    serializer.save()
+                    responses.append(serializer.data)
+                else:
+                    return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(responses, status=status.HTTP_201_CREATED)
+        else:
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     def get(self, request):
         page = request.query_params.get('page', 1)
