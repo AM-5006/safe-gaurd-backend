@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.utils import timezone
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator,EmptyPage,InvalidPage
 
@@ -7,16 +8,20 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination,LimitOffsetPagination
+from rest_framework.decorators import api_view, schema
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import * 
 from .serializers import *
 
 import uuid
+from datetime import timedelta
 # Create your views here.
 
 def home(request):
@@ -233,7 +238,7 @@ class IncidentView(generics.GenericAPIView):
 class IncidentDetailView(generics.GenericAPIView):
     serializer_class = IncidentSerializer
     permission_classes = [AllowAny]
-    queryset = Incident
+    queryset = Incident.objects.all()
 
     def get(self, request, id):
         try:
@@ -261,3 +266,51 @@ class IncidentDetailView(generics.GenericAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IncidentAnalyticsView(generics.GenericAPIView):
+    serializer_class = IncidentSerializer
+    permission_classes = []
+    queryset = Incident.objects.all()
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'value',
+                openapi.IN_QUERY,
+                description="Value for time interval",
+                type=openapi.TYPE_INTEGER,
+                required=False
+            ),
+            openapi.Parameter(
+                'unit',
+                openapi.IN_QUERY,
+                description="Unit for time interval (minutes, hours, etc.)",
+                type=openapi.TYPE_STRING,
+                required=False
+            )
+        ]
+    )
+    def get(self, request):
+        value = request.query_params.get('value', 15)
+        unit = request.query_params.get('unit', 'minutes')
+
+        if unit.lower() == 'minutes':
+            delta = timedelta(minutes=int(value))
+        elif unit.lower() == 'hours':
+            delta = timedelta(hours=int(value))
+        elif unit.lower() == 'days':
+            delta = timedelta(days=int(value))
+        elif unit.lower() == 'weeks':
+            delta = timedelta(weeks=int(value))
+        elif unit.lower() == 'months':
+            delta = timedelta(days=int(value) * 30)
+        elif unit.lower() == 'years':
+            delta = timedelta(days=int(value) * 365)
+        else:
+            return Response({"error":"Please enter proper value and unit"}, status=status.HTTP_400_BAD_REQUEST)
+
+        threshold_time = timezone.now() - delta
+        queryset = self.get_queryset().filter(timestamp__gte=threshold_time)
+
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

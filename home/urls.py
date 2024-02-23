@@ -14,4 +14,6 @@ urlpatterns = [
 
     path('incident/', IncidentView.as_view(), name="incident"),
     path('incident/<str:id>/', IncidentDetailView.as_view(), name="incident-detail"),
+
+    path('incident_analytics/', IncidentAnalyticsView.as_view(), name='incident-analytics'),
 ]
