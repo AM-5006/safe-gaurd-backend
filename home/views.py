@@ -1,16 +1,14 @@
-from django.http import HttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 from django.utils import timezone
 from django.core.files.base import ContentFile
-from django.core.paginator import Paginator,EmptyPage,InvalidPage
+
+from django.db.models import Count
+from django.db.models.functions import ExtractYear, ExtractMonth, ExtractHour, ExtractMinute
 
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework import status, generics
-from rest_framework.views import APIView
-from rest_framework.pagination import PageNumberPagination,LimitOffsetPagination
-from rest_framework.decorators import api_view, schema
 
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -22,6 +20,7 @@ from .serializers import *
 
 import uuid
 from datetime import timedelta
+import calendar
 # Create your views here.
 
 def home(request):
@@ -147,7 +146,6 @@ class CameraDetailView(generics.GenericAPIView):
 class EmployeeView(generics.GenericAPIView):
     serializer_class = EmployeeSerializer
     queryset = Employee.objects.all()
-    pagination_class = PageNumberPagination
     def post(self, request):
         data = request.data
         if isinstance(data, list):
@@ -168,13 +166,8 @@ class EmployeeView(generics.GenericAPIView):
             return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     def get(self, request):
-        page = request.query_params.get('page', 1)
-        paginator = Paginator(self.get_queryset(), 10)
-
         try:
-            serializer = self.serializer_class(paginator.page(page), many=True)
-        except (InvalidPage, EmptyPage) as e:
-            return Response({'error':'No results found'}, status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.serializer_class(self.get_queryset(), many=True)
         except Exception as e:
             return Response({'error':e}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -215,14 +208,9 @@ class IncidentView(generics.GenericAPIView):
     serializer_class = IncidentSerializer
     permission_classes = [AllowAny]
     queryset = Incident.objects.all()
-    pagination_class = PageNumberPagination
     def get(self, request):
-        page = request.query_params.get('page', 1)
-        paginator = Paginator(self.get_queryset(), 10)
         try:
-            serializer = self.serializer_class(paginator.page(page), many=True)
-        except (InvalidPage, EmptyPage) as e:
-            return Response({"error":"No results found"}, status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.serializer_class(self.get_queryset(), many=True)
         except Exception as e:
             return Response({'error':e}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -275,42 +263,113 @@ class IncidentAnalyticsView(generics.GenericAPIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
-                'value',
+                'unit',
                 openapi.IN_QUERY,
-                description="Value for time interval",
-                type=openapi.TYPE_INTEGER,
+                description="Unit for time interval (hour,day etc.)",
+                type=openapi.TYPE_STRING,
                 required=False
             ),
             openapi.Parameter(
-                'unit',
+                'query_type',
                 openapi.IN_QUERY,
-                description="Unit for time interval (minutes, hours, etc.)",
+                description="type of query",
                 type=openapi.TYPE_STRING,
-                required=False
+                required=True
             )
         ]
     )
     def get(self, request):
-        value = request.query_params.get('value', 15)
-        unit = request.query_params.get('unit', 'minutes')
+        try:
+            query_type = request.query_params.get('query_type', None)
+            if query_type == 'IOT':
+                return self.get_incidents_over_time(request)
+            elif query_type == 'IDF':
+                return self.get_identifications_record(request)
+            elif query_type == 'RID':
+                return self.get_recent_incidents(request)
+            elif query_type == 'IBC':
+                return self.get_incident_by_category(request)
+            else:
+                return Response({'data':'error'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'data':'error'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def get_incidents_over_time(self, request):
+        try:
+            data = None
+            unit = request.query_params.get('unit', 'hour')
 
-        if unit.lower() == 'minutes':
-            delta = timedelta(minutes=int(value))
-        elif unit.lower() == 'hours':
-            delta = timedelta(hours=int(value))
-        elif unit.lower() == 'days':
-            delta = timedelta(days=int(value))
-        elif unit.lower() == 'weeks':
-            delta = timedelta(weeks=int(value))
-        elif unit.lower() == 'months':
-            delta = timedelta(days=int(value) * 30)
-        elif unit.lower() == 'years':
-            delta = timedelta(days=int(value) * 365)
-        else:
-            return Response({"error":"Please enter proper value and unit"}, status=status.HTTP_400_BAD_REQUEST)
+            today = timezone.now().date()
+            start_time = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))  
+            end_time = timezone.now()
 
-        threshold_time = timezone.now() - delta
-        queryset = self.get_queryset().filter(timestamp__gte=threshold_time)
+            if unit == 'hour':
+                hour_ago = end_time - timedelta(hours=1)
+                incidents_last_hour = self.get_queryset().filter(timestamp__range=(hour_ago, end_time)).annotate(hour=ExtractHour('timestamp'), minute=ExtractMinute('timestamp')).values('hour', 'minute').annotate(count=Count('id'))
+                data = [{'hour': incident['hour'], 'minute': incident['minute'], 'count': incident['count']} for incident in incidents_last_hour]
+            elif unit == 'day':
+                last_24_hours = end_time - timedelta(hours=24)
+                incidents_last_24_hours = self.get_queryset().filter(timestamp__range=(last_24_hours, end_time)).values('timestamp__hour').annotate(count=Count('id'))
+                data = [{'hour': incident['timestamp__hour'], 'count': incident['count']} for incident in incidents_last_24_hours]
+            elif unit == 'week':
+                last_week = end_time - timedelta(days=7)
+                incidents_last_week = self.get_queryset().filter(timestamp__range=(last_week, end_time)).values('timestamp__date').annotate(count=Count('id'))
+                data = [{'date': incident['timestamp__date'], 'count': incident['count']} for incident in incidents_last_week]
+            elif unit == 'month':
+                last_30_days = end_time - timedelta(days=30)
+                incidents_last_30_days = self.get_queryset().filter(timestamp__range=(last_30_days, end_time)).values('timestamp__date').annotate(count=Count('id'))
+                data = [{'date': incident['timestamp__date'], 'count': incident['count']} for incident in incidents_last_30_days]
+            elif unit == 'year':
+                current_year = today.year
+                current_month = today.month
+                start_time = today.replace(day=1) - timedelta(days=365)  
+                end_time = today.replace(day=1) + timedelta(days=31)  
+                incidents_last_n_months = self.get_queryset().filter(timestamp__range=(start_time, end_time)).annotate(year=ExtractYear('timestamp'), month=ExtractMonth('timestamp')).values('year', 'month').annotate(count=Count('id'))
+                data = [{'month': calendar.month_name[incident['month']], 'year': incident['year'], 'count': incident['count']} for incident in incidents_last_n_months if (incident['year'] < current_year) or (incident['year'] == current_year and incident['month'] <= current_month)]
+                
+            return Response({'data': data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data':'error'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_identifications_record(self, request):
+        try:
+            serializer = self.serializer_class(self.get_queryset(), many=True)
+            unidentified_incidents, identified_incidents = 0, 0
 
-        serializer = self.serializer_class(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            for incident in serializer.data:
+                if not incident["employee"]:
+                    unidentified_incidents += 1
+                else:
+                    identified_incidents += 1
+
+            response_data = {
+                "undentified_incidents": unidentified_incidents,
+                "identified_incidents": identified_incidents,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data':'error'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_recent_incidents(self, request):
+        try:
+            queryset = self.get_queryset().order_by('-timestamp')[:5]
+            serializer = self.serializer_class(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data':'error'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_incident_by_category(self, request):
+        try:
+            queryset = self.get_queryset()
+            serializer = self.serializer_class(queryset, many=True)
+            no_vest, no_helmet, restricted_area = 0, 0, 0 
+            for incident in serializer.data:
+                if 'No-Vest' in incident['incident']:
+                    no_vest += 1
+                if 'No-Helmet' in incident['incident']:
+                    no_helmet += 1
+                if 'Restricted area' in incident['incident']:
+                    restricted_area += 1
+            return Response({'No-Vest': no_vest, 'No-Helmet': no_helmet, 'Restricted area': restricted_area}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'data':'error'}, status=status.HTTP_400_BAD_REQUEST)
