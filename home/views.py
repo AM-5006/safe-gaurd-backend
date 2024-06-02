@@ -8,6 +8,7 @@ from django.db.models.functions import ExtractYear, ExtractMonth, ExtractHour, E
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status, generics
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -71,6 +72,7 @@ class SignInView(TokenObtainPairView):
 class CameraView(generics.GenericAPIView):
     serializer_class = CameraSerializer
     queryset = Camera.objects.all()
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
 
     def post(self, request):
         try:
@@ -114,6 +116,7 @@ class CameraView(generics.GenericAPIView):
 class CameraDetailView(generics.GenericAPIView):
     serializer_class = CameraSerializer
     queryset = Camera.objects.all()
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
 
     def get(self, request, id):
         try:
@@ -146,6 +149,7 @@ class CameraDetailView(generics.GenericAPIView):
 class EmployeeView(generics.GenericAPIView):
     serializer_class = EmployeeSerializer
     queryset = Employee.objects.all()
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
     def post(self, request):
         data = request.data
         if isinstance(data, list):
@@ -175,7 +179,7 @@ class EmployeeView(generics.GenericAPIView):
 class EmployeeDetailView(generics.GenericAPIView):
     serializer_class = EmployeeSerializer
     queryset = Employee.objects.all()
-
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
     def get(self, request, id):
         try:
             employee = self.get_queryset().filter(emp_id=id).first()
@@ -208,6 +212,7 @@ class IncidentView(generics.GenericAPIView):
     serializer_class = IncidentSerializer
     permission_classes = [AllowAny]
     queryset = Incident.objects.all()
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
     def get(self, request):
         try:
             serializer = self.serializer_class(self.get_queryset(), many=True)
@@ -227,7 +232,7 @@ class IncidentDetailView(generics.GenericAPIView):
     serializer_class = IncidentSerializer
     permission_classes = [AllowAny]
     queryset = Incident.objects.all()
-
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
     def get(self, request, id):
         try:
             incident = self.get_queryset().filter(id=id).first()
@@ -260,6 +265,7 @@ class IncidentAnalyticsView(generics.GenericAPIView):
     serializer_class = IncidentSerializer
     permission_classes = []
     queryset = Incident.objects.all()
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
